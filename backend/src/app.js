@@ -21,6 +21,9 @@ if (config.nodeEnv !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Routes
+const authRoutes = require('./routes/authRoutes');
+
 // Base health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -30,6 +33,8 @@ app.get('/api/health', (req, res) => {
     env: config.nodeEnv
   });
 });
+
+app.use('/api/auth', authRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
