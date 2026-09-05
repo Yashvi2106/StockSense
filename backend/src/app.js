@@ -23,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const stockRoutes = require('./routes/stockRoutes');
 
 // Base health check
 app.get('/api/health', (req, res) => {
@@ -35,6 +36,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/stocks', stockRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
