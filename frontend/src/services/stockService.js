@@ -25,5 +25,15 @@ export const stockService = {
   async getCuratedStocks() {
     const res = await api.get('/stocks/curated/list');
     return res.data.data || [];
+  },
+
+  async getCharts(symbol, range = '1M') {
+    const res = await api.get(`/stocks/${encodeURIComponent(symbol)}/charts?range=${range}`);
+    return res.data;
+  },
+
+  async getTechnical(symbol, range = '6M') {
+    const res = await api.get(`/stocks/${encodeURIComponent(symbol)}/technical?range=${range}`);
+    return res.data;
   }
 };

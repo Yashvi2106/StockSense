@@ -23,6 +23,10 @@ import { CardSkeleton } from '../components/common/LoadingSkeleton';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatCurrency, formatPercent, formatCompact } from '../utils/formatters';
 
+import { PriceChart } from '../components/stock/PriceChart';
+import { IndicatorOscillators } from '../components/stock/IndicatorOscillators';
+import { TechnicalScoreCard } from '../components/stock/TechnicalScoreCard';
+
 const TABS = [
   { id: 'overview', name: 'Overview' },
   { id: 'charts', name: 'Charts & Indicators' },
@@ -36,8 +40,12 @@ const TABS = [
 export const StockDetails = () => {
   const { symbol } = useParams();
   const [stock, setStock] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  const [technicalData, setTechnicalData] = useState(null);
+  const [chartRange, setChartRange] = useState('1M');
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
 
@@ -45,13 +53,32 @@ export const StockDetails = () => {
     setLoading(true);
     setError('');
     try {
-      const data = await stockService.getQuote(symbol);
-      setStock(data);
+      const [quoteRes, chartRes, techRes] = await Promise.all([
+        stockService.getQuote(symbol),
+        stockService.getCharts(symbol, chartRange).catch(() => null),
+        stockService.getTechnical(symbol, '6M').catch(() => null)
+      ]);
+      setStock(quoteRes);
+      if (chartRes && chartRes.candles) setChartData(chartRes.candles);
+      if (techRes) setTechnicalData(techRes);
     } catch (err) {
       console.error('Failed to load stock quote:', err);
       setError(`Unable to retrieve market quote for ${symbol}.`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRangeChange = async (newRange) => {
+    setChartRange(newRange);
+    setChartsLoading(true);
+    try {
+      const res = await stockService.getCharts(symbol, newRange);
+      if (res && res.candles) setChartData(res.candles);
+    } catch (err) {
+      console.error('Failed to update chart range:', err);
+    } finally {
+      setChartsLoading(false);
     }
   };
 
@@ -203,13 +230,21 @@ export const StockDetails = () => {
             />
           </div>
 
+          {/* Embedded Interactive Chart */}
+          <PriceChart
+            candles={chartData}
+            range={chartRange}
+            onRangeChange={handleRangeChange}
+            currency={stock.currency}
+          />
+
           {/* AI Synthesis Summary Card */}
           <div className="p-6 rounded-2xl bg-gradient-to-r from-gray-900 via-indigo-950/20 to-gray-900 border border-indigo-500/30">
             <div className="flex items-center gap-2 mb-3">
               <Brain className="w-5 h-5 text-indigo-400" />
               <h3 className="text-base font-bold text-white">StockSense Intelligence Synthesis</h3>
               <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full ml-auto">
-                Signal: Bullish
+                Signal: {technicalData?.scoring?.signal || 'Bullish'}
               </span>
             </div>
 
@@ -226,7 +261,7 @@ export const StockDetails = () => {
                 <ul className="text-xs text-gray-300 space-y-1.5">
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Price currently trades above 50-day moving average
+                    Price currently trades above key moving averages
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
@@ -234,7 +269,7 @@ export const StockDetails = () => {
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Elevated volume accumulation
+                    Elevated volume accumulation relative to 20-day trend
                   </li>
                 </ul>
               </div>
@@ -260,7 +295,31 @@ export const StockDetails = () => {
         </div>
       )}
 
-      {activeTab !== 'overview' && (
+      {/* Charts & Indicators Tab */}
+      {activeTab === 'charts' && (
+        <div className="space-y-6">
+          <PriceChart
+            candles={chartData}
+            range={chartRange}
+            onRangeChange={handleRangeChange}
+            currency={stock.currency}
+          />
+          <IndicatorOscillators candles={chartData} />
+        </div>
+      )}
+
+      {/* Technical Score Tab */}
+      {activeTab === 'technical' && (
+        <div className="space-y-6">
+          <TechnicalScoreCard
+            scoring={technicalData?.scoring}
+            indicators={technicalData?.indicators}
+          />
+        </div>
+      )}
+
+      {/* Placeholder for other upcoming phase tabs */}
+      {['news', 'prediction', 'risk', 'backtest'].includes(activeTab) && (
         <div className="p-8 rounded-2xl bg-gray-900/40 border border-gray-800 text-center">
           <div className="w-12 h-12 rounded-full bg-indigo-950/60 text-indigo-400 flex items-center justify-center mx-auto mb-3">
             <Sparkles className="w-6 h-6" />

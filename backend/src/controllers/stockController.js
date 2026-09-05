@@ -96,6 +96,54 @@ const getMarketOverview = async (req, res, next) => {
   }
 };
 
+// @desc    Get technical indicators and score for a stock
+// @route   GET /api/stocks/:symbol/technical
+// @access  Public
+const getStockTechnical = async (req, res, next) => {
+  try {
+    const { symbol } = req.params;
+    const { range = '6M' } = req.query;
+
+    const history = await marketDataService.getHistorical(symbol, range);
+    const technicalService = require('../services/technicalService');
+    const { latest, scoring } = technicalService.computeIndicators(history);
+
+    res.status(200).json({
+      success: true,
+      symbol: symbol.toUpperCase(),
+      indicators: latest,
+      scoring
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get enriched historical data with indicator overlays
+// @route   GET /api/stocks/:symbol/charts
+// @access  Public
+const getStockChartData = async (req, res, next) => {
+  try {
+    const { symbol } = req.params;
+    const { range = '1M' } = req.query;
+
+    const history = await marketDataService.getHistorical(symbol, range);
+    const technicalService = require('../services/technicalService');
+    const { candles, scoring } = technicalService.computeIndicators(history);
+
+    res.status(200).json({
+      success: true,
+      symbol: symbol.toUpperCase(),
+      range,
+      count: candles.length,
+      scoring,
+      candles
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get curated list of supported featured stocks
 // @route   GET /api/stocks/curated/list
 // @access  Public
@@ -112,5 +160,7 @@ module.exports = {
   getStockQuote,
   getHistoricalData,
   getMarketOverview,
-  getCuratedStocks
+  getCuratedStocks,
+  getStockTechnical,
+  getStockChartData
 };
