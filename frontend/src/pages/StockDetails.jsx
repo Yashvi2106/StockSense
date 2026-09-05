@@ -26,6 +26,8 @@ import { formatCurrency, formatPercent, formatCompact } from '../utils/formatter
 import { PriceChart } from '../components/stock/PriceChart';
 import { IndicatorOscillators } from '../components/stock/IndicatorOscillators';
 import { TechnicalScoreCard } from '../components/stock/TechnicalScoreCard';
+import { NewsFeed } from '../components/stock/NewsFeed';
+import { newsService } from '../services/newsService';
 
 const TABS = [
   { id: 'overview', name: 'Overview' },
@@ -42,10 +44,12 @@ export const StockDetails = () => {
   const [stock, setStock] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [technicalData, setTechnicalData] = useState(null);
+  const [newsData, setNewsData] = useState(null);
   const [chartRange, setChartRange] = useState('1M');
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [chartsLoading, setChartsLoading] = useState(false);
+  const [newsLoading, setNewsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
 
@@ -53,14 +57,16 @@ export const StockDetails = () => {
     setLoading(true);
     setError('');
     try {
-      const [quoteRes, chartRes, techRes] = await Promise.all([
+      const [quoteRes, chartRes, techRes, newsRes] = await Promise.all([
         stockService.getQuote(symbol),
         stockService.getCharts(symbol, chartRange).catch(() => null),
-        stockService.getTechnical(symbol, '6M').catch(() => null)
+        stockService.getTechnical(symbol, '6M').catch(() => null),
+        newsService.getStockNews(symbol).catch(() => null)
       ]);
       setStock(quoteRes);
       if (chartRes && chartRes.candles) setChartData(chartRes.candles);
       if (techRes) setTechnicalData(techRes);
+      if (newsRes) setNewsData(newsRes);
     } catch (err) {
       console.error('Failed to load stock quote:', err);
       setError(`Unable to retrieve market quote for ${symbol}.`);
@@ -318,8 +324,15 @@ export const StockDetails = () => {
         </div>
       )}
 
+      {/* News & Sentiment Tab */}
+      {activeTab === 'news' && (
+        <div className="space-y-6">
+          <NewsFeed newsData={newsData} loading={newsLoading} />
+        </div>
+      )}
+
       {/* Placeholder for other upcoming phase tabs */}
-      {['news', 'prediction', 'risk', 'backtest'].includes(activeTab) && (
+      {['prediction', 'risk', 'backtest'].includes(activeTab) && (
         <div className="p-8 rounded-2xl bg-gray-900/40 border border-gray-800 text-center">
           <div className="w-12 h-12 rounded-full bg-indigo-950/60 text-indigo-400 flex items-center justify-center mx-auto mb-3">
             <Sparkles className="w-6 h-6" />
