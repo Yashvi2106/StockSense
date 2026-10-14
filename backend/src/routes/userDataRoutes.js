@@ -2,7 +2,11 @@ const express = require('express');
 const { protect } = require('../middleware/auth');
 const controller = require('../controllers/userDataController');
 const router = express.Router();
-router.use(protect);
+
+router.use('/watchlist', protect);
+router.use('/portfolio', protect);
+router.use('/alerts', protect);
+
 router.get('/watchlist', controller.getWatchlist);
 router.post('/watchlist', controller.addWatchlist);
 router.delete('/watchlist/:symbol', controller.deleteWatchlist);
