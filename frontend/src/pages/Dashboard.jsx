@@ -83,7 +83,7 @@ export const Dashboard = () => {
             Market Intelligence Dashboard
           </h1>
           <p className="mt-1 text-xs text-gray-400">
-            Real-time equity quotes, technical scores, news sentiment, and algorithmic forecasts.
+            Latest available equity quotes, technical scores, news sentiment, and algorithmic forecasts.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export const Dashboard = () => {
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Benchmark Indices
           </span>
-          <span className="text-[11px] text-gray-500">Live Continuous Feeds</span>
+          <span className="text-[11px] text-gray-500">Latest available provider data</span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -201,8 +201,8 @@ export const Dashboard = () => {
             </div>
             <div className="p-3 rounded-xl bg-gray-900/60 border border-gray-800">
               <span className="text-[11px] text-gray-400 font-medium">7-Day Forecast</span>
-              <div className="text-lg font-bold text-purple-400">₹3,380 &ndash; ₹3,520</div>
-              <span className="text-[10px] text-purple-400">73% Confidence (XGBoost)</span>
+              <div className="text-lg font-bold text-purple-400">Open stock details</div>
+              <span className="text-[10px] text-purple-400">Forecast generated per symbol</span>
             </div>
           </div>
         </div>

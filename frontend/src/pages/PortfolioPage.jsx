@@ -1,8 +1,12 @@
-import React from 'react';
-import { Briefcase, Plus, TrendingUp, AlertTriangle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Briefcase, AlertTriangle } from 'lucide-react';
 import { MetricCard } from '../components/common/MetricCard';
+import { userDataService } from '../services/userDataService';
 
 export const PortfolioPage = () => {
+  const [data, setData] = useState({ holdings: [], totals: {} });
+  useEffect(() => { userDataService.getPortfolio().then(setData).catch(() => {}); }, []);
+  const totals = data.totals || {};
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -22,10 +26,10 @@ export const PortfolioPage = () => {
 
       {/* Portfolio Metrics Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <MetricCard title="Total Invested" value="₹64,000.00" subtitle="Initial Capital" />
-        <MetricCard title="Current Value" value="₹68,430.00" change={4430} changePercent={6.92} subtitle="Market Valuation" />
-        <MetricCard title="Total P&L" value="+₹4,430.00" change={4430} subtitle="Unrealized Gains" />
-        <MetricCard title="Active Holdings" value="2 Stocks" subtitle="NSE Large Cap" />
+        <MetricCard title="Total Invested" value={`₹${(totals.investedValue || 0).toFixed(2)}`} subtitle="Initial Capital" />
+        <MetricCard title="Current Value" value={`₹${(totals.currentValue || 0).toFixed(2)}`} change={totals.pnl} changePercent={totals.pnlPercent} subtitle="Market Valuation" />
+        <MetricCard title="Total P&L" value={`₹${(totals.pnl || 0).toFixed(2)}`} change={totals.pnl} subtitle="Unrealized Gains" />
+        <MetricCard title="Active Holdings" value={`${data.holdings?.length || 0} Stocks`} subtitle="Tracked positions" />
       </div>
 
       {/* Holdings Table */}
@@ -46,24 +50,10 @@ export const PortfolioPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800/60">
-            <tr className="hover:bg-gray-800/40 transition">
-              <td className="py-3.5 font-bold text-white">TCS</td>
-              <td className="py-3.5 text-gray-300">10 shares</td>
-              <td className="py-3.5 text-gray-300">₹3,200.00</td>
-              <td className="py-3.5 text-gray-300">₹3,421.50</td>
-              <td className="py-3.5 font-semibold text-white">₹34,215.00</td>
-              <td className="py-3.5 font-semibold text-emerald-400">+₹2,215.00 (+6.92%)</td>
-            </tr>
-            <tr className="hover:bg-gray-800/40 transition">
-              <td className="py-3.5 font-bold text-white">INFY</td>
-              <td className="py-3.5 text-gray-300">20 shares</td>
-              <td className="py-3.5 text-gray-300">₹1,600.00</td>
-              <td className="py-3.5 text-gray-300">₹1,845.20</td>
-              <td className="py-3.5 font-semibold text-white">₹36,904.00</td>
-              <td className="py-3.5 font-semibold text-emerald-400">+₹4,904.00 (+15.3%)</td>
-            </tr>
+            {data.holdings?.map((holding) => <tr key={holding._id} className="hover:bg-gray-800/40 transition"><td className="py-3.5 font-bold text-white">{holding.symbol}</td><td className="py-3.5 text-gray-300">{holding.quantity}</td><td className="py-3.5 text-gray-300">₹{holding.averageBuyPrice.toFixed(2)}</td><td className="py-3.5 text-gray-300">₹{holding.currentPrice.toFixed(2)}</td><td className="py-3.5 font-semibold text-white">₹{holding.currentValue.toFixed(2)}</td><td className={`py-3.5 font-semibold ${holding.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>₹{holding.pnl.toFixed(2)} ({holding.pnlPercent.toFixed(2)}%)</td></tr>)}
           </tbody>
         </table>
+        {!data.holdings?.length && <p className="py-8 text-center text-xs text-gray-500">No holdings in your portfolio.</p>}
       </div>
     </div>
   );

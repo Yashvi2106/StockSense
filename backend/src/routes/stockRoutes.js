@@ -14,6 +14,7 @@ const router = express.Router();
 router.get('/search', searchStocks);
 router.get('/market/overview', getMarketOverview);
 router.get('/curated/list', getCuratedStocks);
+router.get('/:symbol/quote', getStockQuote);
 router.get('/:symbol', getStockQuote);
 router.get('/:symbol/history', getHistoricalData);
 router.get('/:symbol/technical', getStockTechnical);

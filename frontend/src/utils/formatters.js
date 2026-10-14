@@ -48,3 +48,14 @@ export const formatDate = (dateStr) => {
     return dateStr;
   }
 };
+
+export const formatMarketTimestamp = (dateStr) => {
+  if (!dateStr) return 'Unavailable';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return 'Unavailable';
+  return `${new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date)} IST`;
+};

@@ -1,7 +1,7 @@
 const yahooFinance = require('yahoo-finance2').default;
 const { NewsArticle } = require('../models');
 const mlClient = require('./mlClient');
-const { getNormalizedSymbol, getYahooSymbol } = require('../utils/stockCatalog');
+const { resolveSymbol } = require('./marketData/symbolResolver');
 
 // Curated authentic headlines for primary tickers when Yahoo Finance rate-limits
 const CURATED_NEWS = {
@@ -80,8 +80,9 @@ const CURATED_NEWS = {
 
 class NewsService {
   async getStockNews(symbol) {
-    const norm = getNormalizedSymbol(symbol);
-    const yahooSym = getYahooSymbol(symbol);
+    const resolved = resolveSymbol(symbol);
+    const norm = resolved.symbol;
+    const yahooSym = resolved.providerSymbol;
     let rawArticles = [];
 
     // 1. Try fetching live news from Yahoo Finance

@@ -16,9 +16,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routes import nlp
+from app.routes import nlp, predict
 
 app.include_router(nlp.router)
+app.include_router(predict.router)
 
 @app.get("/health")
 def health_check():

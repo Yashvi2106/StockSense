@@ -25,6 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 const authRoutes = require('./routes/authRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const newsRoutes = require('./routes/newsRoutes');
+const userDataRoutes = require('./routes/userDataRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Base health check
 app.get('/api/health', (req, res) => {
@@ -39,6 +41,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/stocks', stockRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api', userDataRoutes);
+app.use('/api', analyticsRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
@@ -51,10 +55,17 @@ app.use((req, res, next) => {
 // Centralized error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err);
-  const status = err.statusCode || err.status || 500;
+  const isRateLimited = err.response?.status === 429 || /too many requests|rate limit/i.test(err.message || '');
+  const status = err.statusCode || err.status || (err.code === 'HISTORICAL_NOT_FOUND' ? 404 : isRateLimited ? 429 : err.code === 'ETIMEDOUT' ? 504 : 500);
+  const message = err.code === 'STOCK_NOT_FOUND'
+    ? 'Stock symbol was not found by the market-data provider.'
+    : isRateLimited
+      ? 'Market-data provider rate limit reached. Please retry later.'
+      : err.message || 'Internal Server Error';
   res.status(status).json({
     success: false,
-    message: err.message || 'Internal Server Error',
+    message,
+    code: err.code || 'MARKET_DATA_ERROR',
     error: config.nodeEnv === 'development' ? err.stack : undefined
   });
 });

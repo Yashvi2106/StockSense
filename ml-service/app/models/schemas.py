@@ -14,3 +14,27 @@ class SentimentResponse(BaseModel):
 
 class BatchSentimentRequest(BaseModel):
     articles: List[SentimentRequest]
+
+class PredictionMetrics(BaseModel):
+    mae: float
+    rmse: float
+    directionalAccuracy: float
+
+class PredictionRequest(BaseModel):
+    symbol: str
+    currentPrice: float
+    historicalData: List[Dict[str, Any]] = []
+
+class PredictionResponse(BaseModel):
+    symbol: str
+    currentPrice: float
+    predictedPrice: float
+    predictedReturn: float
+    lowerRange: float
+    upperRange: float
+    confidence: float
+    modelName: str
+    modelVersion: str
+    metrics: PredictionMetrics
+    importantFactors: List[str]
+    riskFactors: List[str]

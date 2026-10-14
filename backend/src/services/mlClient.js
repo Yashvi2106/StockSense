@@ -21,6 +21,15 @@ const mlClient = {
     }
   },
 
+  async predict(symbol, currentPrice, historicalData) {
+    try {
+      const res = await mlApi.post('/predict', { symbol, currentPrice, historicalData });
+      return res.data;
+    } catch (err) {
+      throw Object.assign(new Error('Prediction service unavailable'), { statusCode: 503, code: 'ML_SERVICE_UNAVAILABLE' });
+    }
+  },
+
   /**
    * Local JavaScript fallback sentiment analyzer for local dev offline resilience
    */

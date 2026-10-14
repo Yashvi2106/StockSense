@@ -63,6 +63,9 @@ const getHistoricalData = async (req, res, next) => {
       symbol: symbol.toUpperCase(),
       range: selectedRange,
       count: history.length,
+      dataStatus: 'HISTORICAL',
+      dataSource: 'Yahoo Finance',
+      timezone: 'Asia/Kolkata',
       data: history
     });
   } catch (error) {

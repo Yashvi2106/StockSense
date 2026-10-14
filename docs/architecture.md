@@ -2,27 +2,45 @@
 
 ## System Topology
 
-```text
-               +----------------------------------+
-               |      React 18 Single Page App    |
+```
+
+### Market Quote Flow
                |      (Vite + Tailwind CSS)       |
-               +-----------------+----------------+
-                                 |
-                                 | HTTP / REST (JWT Auth)
-                                 v
-               +-----------------+----------------+
-               |     Node.js / Express Server     |
-               |     (API Gateway & Controller)   |
-               +--------+------------------+------+
-                        |                  |
-              Mongoose  |                  | Internal REST
-             Protocols  |                  | (Private)
-                        v                  v
-       +----------------+-----+   +--------+-----------------+
-       |   MongoDB Database   |   |   FastAPI Python Service |
-       |   (Local / Atlas /   |   |   (XGBoost / Risk / NLP) |
-       |    In-Memory Fallback)   +--------------------------+
-       +----------------------+
+       Market Data Provider -> Node MarketDataService -> normalized quote
+                                                                        |              |
+                                                                        |              +-> current price, OHLC, volume, timestamp
+                                                                        +-> MongoDB Stock / HistoricalPrice cache
+                                                                        |
+                                                                        +-> REST response -> React Dashboard
+```
+                        |           | Internal REST
+                        |           v
+                        |  +--------+-----------------+
+                        |  | FastAPI Python Service  |
+                        |  | (XGBoost / Risk / NLP)  |
+                        |  +--------------------------+
+                        v
+       +----------------+----------------------+
+       |        Market Data Service            |
+       | provider -> normalize -> cache        |
+       +----------------+----------------------+
+                        |
+                        v
+       +----------------+----------------------+
+       |   MongoDB (Local / Atlas / Memory)    |
+       | quote cache + historical OHLCV cache  |
+       +---------------------------------------+
+
+Market quote flow:
+
+```text
+Market Data Provider -> Node MarketDataService -> normalized quote
+                                      |              |
+                                      |              +-> current price, OHLC, volume, timestamp
+                                      +-> MongoDB Stock / HistoricalPrice cache
+                                      |
+                                      +-> REST response -> React Dashboard
+```
 ```
 
 ### 1. Frontend Layer

@@ -111,10 +111,10 @@ export const LandingPage = () => {
                 </h3>
               </div>
               <div className="sm:text-right">
-                <div className="text-3xl font-extrabold text-white">₹3,421.50</div>
+                <div className="text-3xl font-extrabold text-white">Latest provider data</div>
                 <div className="text-xs font-semibold text-emerald-400 flex sm:justify-end items-center gap-1 mt-0.5">
                   <TrendingUp className="w-3.5 h-3.5" />
-                  +₹52.40 (+1.55%) Today
+                  Quotes load after selecting a stock
                 </div>
               </div>
             </div>

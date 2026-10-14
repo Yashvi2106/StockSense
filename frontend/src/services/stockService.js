@@ -8,7 +8,7 @@ export const stockService = {
   },
 
   async getQuote(symbol) {
-    const res = await api.get(`/stocks/${encodeURIComponent(symbol)}`);
+    const res = await api.get(`/stocks/${encodeURIComponent(symbol)}/quote`);
     return res.data.data;
   },
 

@@ -34,6 +34,22 @@ const historicalPriceSchema = new mongoose.Schema(
       type: Number,
       required: true,
       default: 0
+    },
+    marketTimestamp: {
+      type: Date
+    },
+    fetchedAt: {
+      type: Date,
+      default: Date.now
+    },
+    source: {
+      type: String,
+      default: 'Yahoo Finance'
+    },
+    dataStatus: {
+      type: String,
+      enum: ['HISTORICAL'],
+      default: 'HISTORICAL'
     }
   },
   {

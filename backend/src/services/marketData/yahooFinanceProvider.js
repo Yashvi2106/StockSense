@@ -1,6 +1,8 @@
 const yahooFinance = require('yahoo-finance2').default;
 const MarketDataProvider = require('./providerInterface');
-const { DEFAULT_STOCKS, getNormalizedSymbol, getYahooSymbol } = require('../../utils/stockCatalog');
+const { DEFAULT_STOCKS } = require('../../utils/stockCatalog');
+const { normalizeSymbol, resolveSymbol } = require('./symbolResolver');
+const { TIMEZONE, getMarketStatus, getDataStatus } = require('./marketStatus');
 
 class YahooFinanceProvider extends MarketDataProvider {
   constructor() {
@@ -27,7 +29,7 @@ class YahooFinanceProvider extends MarketDataProvider {
         const yahooQuotes = searchRes.quotes
           .filter((q) => q.isYahooFinance && q.symbol)
           .map((q) => ({
-            symbol: getNormalizedSymbol(q.symbol),
+            symbol: normalizeSymbol(q.symbol),
             rawSymbol: q.symbol,
             companyName: q.shortname || q.longname || q.symbol,
             exchange: q.exchange || 'NSE',
@@ -52,23 +54,29 @@ class YahooFinanceProvider extends MarketDataProvider {
   }
 
   async getQuote(symbol) {
-    const yahooSym = getYahooSymbol(symbol);
-    const norm = getNormalizedSymbol(symbol);
+    const resolved = resolveSymbol(symbol);
+    const yahooSym = resolved.providerSymbol;
+    const norm = resolved.symbol;
     const catalogItem = DEFAULT_STOCKS.find((s) => s.symbol === norm);
 
     const quote = await yahooFinance.quote(yahooSym);
-    if (!quote) throw new Error(`Stock quote not found for ${symbol}`);
+    if (!quote || !quote.regularMarketPrice) throw Object.assign(new Error(`Stock quote not found for ${symbol}`), { statusCode: 404, code: 'STOCK_NOT_FOUND' });
 
     const currentPrice = quote.regularMarketPrice || quote.ask || quote.bid || quote.previousClose || 0;
     const previousClose = quote.regularMarketPreviousClose || currentPrice;
     const change = quote.regularMarketChange ?? (currentPrice - previousClose);
     const changePercent = quote.regularMarketChangePercent ?? (previousClose ? ((currentPrice - previousClose) / previousClose) * 100 : 0);
 
+    const providerTimestamp = quote.regularMarketTime
+      ? (quote.regularMarketTime instanceof Date ? quote.regularMarketTime : new Date(Number(quote.regularMarketTime) * 1000))
+      : null;
+    const marketStatus = getMarketStatus(new Date(), resolved.exchange, quote.marketState);
     return {
       symbol: norm,
+      price: Number(currentPrice.toFixed(2)),
       yahooSymbol: yahooSym,
       companyName: quote.longName || quote.shortName || catalogItem?.companyName || norm,
-      exchange: quote.exchange || catalogItem?.exchange || 'NSE',
+      exchange: quote.exchange || resolved.exchange || catalogItem?.exchange || 'NSE',
       currency: quote.currency || (norm.endsWith('.NS') ? 'INR' : 'INR'),
       currentPrice: Number(currentPrice.toFixed(2)),
       previousClose: Number(previousClose.toFixed(2)),
@@ -84,13 +92,20 @@ class YahooFinanceProvider extends MarketDataProvider {
       fiftyTwoWeekLow: quote.fiftyTwoWeekLow ? Number(quote.fiftyTwoWeekLow.toFixed(2)) : null,
       sector: catalogItem?.sector || 'General',
       industry: catalogItem?.industry || 'General',
-      lastUpdated: new Date()
+      timestamp: providerTimestamp,
+      lastUpdated: providerTimestamp || new Date(),
+      fetchedAt: new Date(),
+      timezone: TIMEZONE,
+      marketStatus,
+      dataStatus: getDataStatus({ marketStatus, providerTimestamp, delayedBy: quote.exchangeDataDelayedBy || 0 }),
+      dataSource: 'Yahoo Finance'
     };
   }
 
   async getHistorical(symbol, range = '1M') {
-    const yahooSym = getYahooSymbol(symbol);
-    const norm = getNormalizedSymbol(symbol);
+    const resolved = resolveSymbol(symbol);
+    const yahooSym = resolved.providerSymbol;
+    const norm = resolved.symbol;
 
     // Map range to period1 start date
     const now = new Date();
@@ -141,12 +156,16 @@ class YahooFinanceProvider extends MarketDataProvider {
     try {
       const chartResult = await yahooFinance.chart(yahooSym, queryOptions);
       quotes = chartResult?.quotes || [];
-    } catch {
-      quotes = await yahooFinance.historical(yahooSym, queryOptions).catch(() => []);
+    } catch (chartError) {
+      try {
+        quotes = await yahooFinance.historical(yahooSym, queryOptions);
+      } catch (historicalError) {
+        throw historicalError || chartError;
+      }
     }
 
     if (!quotes || quotes.length === 0) {
-      throw new Error(`No historical data found for ${symbol}`);
+      throw Object.assign(new Error(`No historical data found for ${symbol}`), { statusCode: 404, code: 'HISTORICAL_NOT_FOUND' });
     }
 
     return quotes
@@ -187,18 +206,10 @@ class YahooFinanceProvider extends MarketDataProvider {
           changePercent: Number(changePercent.toFixed(2))
         });
       } catch (err) {
-        // Provide index baseline if specific symbol is throttled
-        const baselinePrices = { '^NSEI': 24500, '^BSESN': 80500, '^GSPC': 5600, '^IXIC': 17800 };
-        results.push({
-          name: idx.name,
-          symbol: idx.symbol,
-          region: idx.region,
-          price: baselinePrices[idx.symbol] || 10000,
-          change: 45.2,
-          changePercent: 0.35
-        });
+        console.warn(`[MarketData] Index unavailable for ${idx.symbol}: ${err.message}`);
       }
     }
+    if (results.length === 0) throw Object.assign(new Error('Market overview unavailable'), { statusCode: 503, code: 'DATA_UNAVAILABLE' });
     return results;
   }
 }

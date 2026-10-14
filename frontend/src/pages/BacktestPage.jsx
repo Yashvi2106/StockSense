@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SlidersHorizontal, Play, BarChart3, AlertTriangle } from 'lucide-react';
 import { MetricCard } from '../components/common/MetricCard';
+import { analyticsService } from '../services/analyticsService';
 
 export const BacktestPage = () => {
+  const [form, setForm] = useState({ symbol: 'TCS', strategy: 'sma_crossover', initialCapital: 100000 });
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const runSimulation = async () => {
+    setLoading(true); setError('');
+    try { setResult(await analyticsService.runBacktest(form)); } catch (err) { setError(err.response?.data?.message || 'Unable to run simulation.'); } finally { setLoading(false); }
+  };
   return (
     <div className="space-y-6">
       <div>
@@ -21,7 +30,7 @@ export const BacktestPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
             <label className="block text-xs text-gray-400 mb-1">Asset</label>
-            <select className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
+            <select value={form.symbol} onChange={(event) => setForm({ ...form, symbol: event.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
               <option value="TCS">TCS (Tata Consultancy Services)</option>
               <option value="INFY">INFY (Infosys)</option>
               <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
@@ -29,7 +38,7 @@ export const BacktestPage = () => {
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Strategy</label>
-            <select className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
+            <select value={form.strategy} onChange={(event) => setForm({ ...form, strategy: event.target.value })} className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white">
               <option value="sma_crossover">SMA Crossover (20 / 50)</option>
               <option value="rsi_strategy">RSI (30 / 70)</option>
               <option value="buy_and_hold">Buy and Hold Benchmark</option>
@@ -39,25 +48,26 @@ export const BacktestPage = () => {
             <label className="block text-xs text-gray-400 mb-1">Initial Capital</label>
             <input
               type="number"
-              defaultValue={100000}
+              value={form.initialCapital}
+              onChange={(event) => setForm({ ...form, initialCapital: Number(event.target.value) })}
               className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white"
             />
           </div>
           <div className="flex items-end">
-            <button className="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-sm">
+            <button onClick={runSimulation} disabled={loading} className="w-full py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-sm">
               <Play className="w-3.5 h-3.5" />
-              Run Simulation
+              {loading ? 'Running...' : 'Run Simulation'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Results Preview */}
+      {error && <p className="text-xs text-rose-400">{error}</p>}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <MetricCard title="Initial Capital" value="₹100,000" subtitle="Starting Budget" />
-        <MetricCard title="Final Capital" value="₹124,300" change={24300} subtitle="+24.30% Net Gain" />
-        <MetricCard title="Max Drawdown" value="8.4%" subtitle="Historical Peak-to-Trough" />
-        <MetricCard title="Total Trades" value="19" subtitle="Win Rate: 68.4%" />
+        <MetricCard title="Initial Capital" value={`₹${(result?.initialCapital ?? form.initialCapital).toLocaleString()}`} subtitle="Starting Budget" />
+        <MetricCard title="Final Capital" value={result ? `₹${result.finalCapital.toLocaleString()}` : '—'} change={result ? result.finalCapital - result.initialCapital : undefined} subtitle={result ? `${result.returnPercent}% Net Return` : 'Run a simulation'} />
+        <MetricCard title="Strategy" value={result?.strategy || '—'} subtitle="Selected model" />
+        <MetricCard title="Total Trades" value={result?.trades ?? '—'} subtitle="Historical execution count" />
       </div>
 
       <div className="p-4 rounded-xl bg-gray-900/60 border border-gray-800 text-xs text-gray-400 flex items-center gap-2">

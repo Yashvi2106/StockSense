@@ -1,0 +1,15 @@
+const express = require('express');
+const { protect } = require('../middleware/auth');
+const controller = require('../controllers/userDataController');
+const router = express.Router();
+router.use(protect);
+router.get('/watchlist', controller.getWatchlist);
+router.post('/watchlist', controller.addWatchlist);
+router.delete('/watchlist/:symbol', controller.deleteWatchlist);
+router.get('/portfolio', controller.getPortfolio);
+router.post('/portfolio/holdings', controller.addHolding);
+router.delete('/portfolio/holdings/:id', controller.deleteHolding);
+router.get('/alerts', controller.getAlerts);
+router.post('/alerts', controller.createAlert);
+router.delete('/alerts/:id', controller.deleteAlert);
+module.exports = router;
