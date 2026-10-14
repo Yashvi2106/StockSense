@@ -28,6 +28,7 @@ import { PriceChart } from '../components/stock/PriceChart';
 import { IndicatorOscillators } from '../components/stock/IndicatorOscillators';
 import { TechnicalScoreCard } from '../components/stock/TechnicalScoreCard';
 import { NewsFeed } from '../components/stock/NewsFeed';
+import { AISummaryCard } from '../components/stock/AISummaryCard';
 import { newsService } from '../services/newsService';
 import { analyticsService } from '../services/analyticsService';
 import { userDataService } from '../services/userDataService';
@@ -48,11 +49,13 @@ export const StockDetails = () => {
   const [chartData, setChartData] = useState([]);
   const [technicalData, setTechnicalData] = useState(null);
   const [newsData, setNewsData] = useState(null);
+  const [aiSummary, setAiSummary] = useState(null);
   const [chartRange, setChartRange] = useState('1M');
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [chartsLoading, setChartsLoading] = useState(false);
   const [newsLoading, setNewsLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const [error, setError] = useState('');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [prediction, setPrediction] = useState(null);
@@ -63,16 +66,18 @@ export const StockDetails = () => {
     setLoading(true);
     setError('');
     try {
-      const [quoteRes, chartRes, techRes, newsRes] = await Promise.all([
+      const [quoteRes, chartRes, techRes, newsRes, summaryRes] = await Promise.all([
         stockService.getQuote(symbol),
         stockService.getCharts(symbol, chartRange).catch(() => null),
         stockService.getTechnical(symbol, '6M').catch(() => null),
-        newsService.getStockNews(symbol).catch(() => null)
+        newsService.getStockNews(symbol).catch(() => null),
+        analyticsService.getAISummary(symbol).catch(() => null)
       ]);
       setStock(quoteRes);
       if (chartRes && chartRes.candles) setChartData(chartRes.candles);
       if (techRes) setTechnicalData(techRes);
       if (newsRes) setNewsData(newsRes);
+      if (summaryRes) setAiSummary(summaryRes);
     } catch (err) {
       console.error('Failed to load stock quote:', err);
       setError(err.response?.data?.message || `Price temporarily unavailable for ${symbol}.`);

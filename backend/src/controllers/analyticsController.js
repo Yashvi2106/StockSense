@@ -1,12 +1,20 @@
 const marketDataService = require('../services/marketData');
 const technicalService = require('../services/technicalService');
 const mlClient = require('../services/mlClient');
+const aiSummaryService = require('../services/aiSummaryService');
 
 const getPrediction = async (req, res, next) => {
   try {
     const quote = await marketDataService.getQuote(req.params.symbol);
     const history = await marketDataService.getHistorical(req.params.symbol, '1Y');
     res.json({ success: true, data: await mlClient.predict(req.params.symbol, quote.currentPrice, history) });
+  } catch (error) { next(error); }
+};
+
+const getAISummary = async (req, res, next) => {
+  try {
+    const summary = await aiSummaryService.generateStockSummary(req.params.symbol);
+    res.json({ success: true, data: summary });
   } catch (error) { next(error); }
 };
 
@@ -43,4 +51,4 @@ const runBacktest = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
-module.exports = { getPrediction, getRisk, runBacktest };
+module.exports = { getPrediction, getRisk, runBacktest, getAISummary };
