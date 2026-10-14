@@ -99,6 +99,18 @@ export const StockDetails = () => {
     }
   };
 
+  const handleRefreshSummary = async () => {
+    setSummaryLoading(true);
+    try {
+      const res = await analyticsService.getAISummary(symbol);
+      if (res) setAiSummary(res);
+    } catch (err) {
+      console.error('Failed to refresh AI summary:', err);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStock();
   }, [symbol]);
@@ -290,59 +302,11 @@ export const StockDetails = () => {
           />
 
           {/* AI Synthesis Summary Card */}
-          <div className="p-6 rounded-2xl bg-gradient-to-r from-gray-900 via-indigo-950/20 to-gray-900 border border-indigo-500/30">
-            <div className="flex items-center gap-2 mb-3">
-              <Brain className="w-5 h-5 text-indigo-400" />
-              <h3 className="text-base font-bold text-white">StockSense Intelligence Synthesis</h3>
-              <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full ml-auto">
-                Signal: {technicalData?.scoring?.signal || 'Bullish'}
-              </span>
-            </div>
-
-            <p className="text-xs text-gray-300 leading-relaxed">
-              {stock.symbol} is displaying steady technical strength, backed by consistent trading volume. Moving average convergence signals positive continuation, while recent news flow skews favorable.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-gray-800/80">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Positive Contributing Factors
-                </h4>
-                <ul className="text-xs text-gray-300 space-y-1.5">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Price currently trades above key moving averages
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Positive enterprise news sentiment score (0.78)
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Elevated volume accumulation relative to 20-day trend
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5 mb-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Risk & Warning Factors
-                </h4>
-                <ul className="text-xs text-gray-300 space-y-1.5">
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                    Annualized 30-day volatility above peer median
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                    Sensitivity to global IT sector spending delays
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <AISummaryCard
+            summary={aiSummary}
+            loading={summaryLoading}
+            onRefresh={handleRefreshSummary}
+          />
         </div>
       )}
 
